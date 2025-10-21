@@ -1,16 +1,5 @@
 const { useState, useEffect } = React;
 
-// 检查两个数组是否有交集
-const hasIntersection = (arr1, arr2) => {
-    const set1 = new Set(arr1);
-    for (let item of arr2) {
-        if (set1.has(item)) {
-            return true;
-        }
-    }
-    return false;
-};
-
 // 检查 subset 是否是 set 的子集
 const isSubset = (set, subset) => {
     for (let elem of subset) {
@@ -21,7 +10,50 @@ const isSubset = (set, subset) => {
     return true;
 };
 
+// 健康追踪组件
+const HealthTracker = () => {
+    const [bloodPressure, setBloodPressure] = useState('');
+    const [bloodSugar, setBloodSugar] = useState('');
+    const [feelings, setFeelings] = useState('');
 
+    return (
+        <div className="health-tracker">
+            <h2>用药反馈与健康追踪</h2>
+            <div className="form-group">
+                <label htmlFor="blood-pressure">血压 (mmHg)</label>
+                <input 
+                    id="blood-pressure"
+                    type="text" 
+                    value={bloodPressure} 
+                    onChange={(e) => setBloodPressure(e.target.value)}
+                    placeholder="例如: 120/80"
+                />
+            </div>
+            <div className="form-group">
+                <label htmlFor="blood-sugar">血糖 (mmol/L)</label>
+                <input 
+                    id="blood-sugar"
+                    type="text" 
+                    value={bloodSugar} 
+                    onChange={(e) => setBloodSugar(e.target.value)}
+                    placeholder="例如: 5.6"
+                />
+            </div>
+            <div className="form-group">
+                <label htmlFor="feelings">主观感受</label>
+                <textarea 
+                    id="feelings"
+                    value={feelings} 
+                    onChange={(e) => setFeelings(e.target.value)}
+                    placeholder="例如: 今天感觉精力充沛，没有头晕。"
+                ></textarea>
+            </div>
+            {/* 未来可以增加保存按钮，将数据发送到后端 */}
+        </div>
+    );
+};
+
+// 主应用组件
 const App = () => {
     const [allDrugs, setAllDrugs] = useState([]);
     const [interactions, setInteractions] = useState([]);
@@ -30,8 +62,6 @@ const App = () => {
 
     // 1. 加载数据
     useEffect(() => {
-        // 在Web环境中，我们使用 fetch 来加载本地的 JSON 文件
-        // 注意：这需要在一个 Web Server 环境下运行，直接打开本地 HTML 文件会因安全策略失败
         const fetchData = async () => {
             try {
                 const drugsRes = await fetch('../data/drugs.json');
@@ -52,7 +82,7 @@ const App = () => {
     // 2. 当用户用药列表变化时，重新计算风险
     useEffect(() => {
         if (userDrugs.length < 2) {
-            setRisk(null); // 少于2种药，无相互作用
+            setRisk(null);
             return;
         }
 
@@ -62,9 +92,7 @@ const App = () => {
         for (const interaction of interactions) {
             const interactionDrugIds = new Set(interaction.drugs);
             
-            // 检查用户的药物是否包含了风险组合
             if (isSubset(userDrugIds, interactionDrugIds)) {
-                // 优先显示最严重的风险
                 if (!detectedRisk || interaction.risk_level === 'red') {
                     detectedRisk = interaction;
                 }
@@ -76,7 +104,6 @@ const App = () => {
 
     // 3. 事件处理函数
     const addDrug = (drug) => {
-        // 防止重复添加
         if (!userDrugs.find(d => d.id === drug.id)) {
             setUserDrugs([...userDrugs, drug]);
         }
@@ -126,6 +153,9 @@ const App = () => {
                     <p>✅ 当前用药方案未发现已知的相互作用风险。</p>
                 )}
             </div>
+
+            {/* 新增的健康追踪模块 */}
+            <HealthTracker />
         </div>
     );
 };

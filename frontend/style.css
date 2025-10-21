@@ -102,3 +102,35 @@ h1, h2 {
 .risk-alert h3 {
     margin-top: 0;
 }
+
+/* 健康追踪模块样式 */
+.health-tracker {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+}
+
+.health-tracker .form-group {
+    margin-bottom: 15px;
+}
+
+.health-tracker label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.health-tracker input,
+.health-tracker textarea {
+    width: 95%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.health-tracker textarea {
+    resize: vertical;
+    min-height: 60px;
+}

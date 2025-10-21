@@ -10,6 +10,39 @@ const isSubset = (set, subset) => {
     return true;
 };
 
+// --- 核心逻辑：从医嘱生成计划 ---
+const generatePlan = (drugs) => {
+    // 假设的用餐时间
+    const mealTimes = { breakfast: 8, lunch: 12, dinner: 18 };
+    let plan = [];
+
+    drugs.forEach(drug => {
+        const instruction = drug.instruction || '';
+        
+        // 规则解析
+        if (instruction.includes('每日一次')) {
+            if (instruction.includes('餐前')) {
+                plan.push({ time: '07:30', task: `服用 ${drug.name}` });
+            } else { // 默认餐后
+                plan.push({ time: '08:30', task: `服用 ${drug.name}` });
+            }
+        } else if (instruction.includes('一日两次') || instruction.includes('早晚各一次')) {
+             plan.push({ time: '08:30', task: `服用 ${drug.name}` });
+             plan.push({ time: '18:30', task: `服用 ${drug.name}` });
+        } else if (instruction.includes('每6-8小时')) {
+            plan.push({ time: '08:00', task: `服用 ${drug.name}` });
+            plan.push({ time: '15:00', task: `服用 ${drug.name}` });
+            plan.push({ time: '22:00', task: `服用 ${drug.name}` });
+        }
+    });
+
+    // 按时间排序并返回
+    return plan.sort((a, b) => a.time.localeCompare(b.time));
+};
+
+
+// --- UI 组件 ---
+
 // 健康追踪组件
 const HealthTracker = () => {
     const [bloodPressure, setBloodPressure] = useState('');
@@ -48,7 +81,27 @@ const HealthTracker = () => {
                     placeholder="例如: 今天感觉精力充沛，没有头晕。"
                 ></textarea>
             </div>
-            {/* 未来可以增加保存按钮，将数据发送到后端 */}
+        </div>
+    );
+};
+
+// 用药计划组件
+const MedicationPlan = ({ plan }) => {
+    return (
+        <div className="medication-plan">
+            <h2>今日用药计划</h2>
+            {plan.length > 0 ? (
+                <ul className="plan-list">
+                    {plan.map((item, index) => (
+                        <li key={index} className="plan-item">
+                            <div className="plan-time">{item.time}</div>
+                            <div className="plan-task">{item.task}</div>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p>暂无用药计划。请从药品库添加您的用药。</p>
+            )}
         </div>
     );
 };
@@ -59,6 +112,7 @@ const App = () => {
     const [interactions, setInteractions] = useState([]);
     const [userDrugs, setUserDrugs] = useState([]);
     const [risk, setRisk] = useState(null);
+    const [plan, setPlan] = useState([]);
 
     // 1. 加载数据
     useEffect(() => {
@@ -85,13 +139,10 @@ const App = () => {
             setRisk(null);
             return;
         }
-
         const userDrugIds = new Set(userDrugs.map(d => d.id));
         let detectedRisk = null;
-
         for (const interaction of interactions) {
             const interactionDrugIds = new Set(interaction.drugs);
-            
             if (isSubset(userDrugIds, interactionDrugIds)) {
                 if (!detectedRisk || interaction.risk_level === 'red') {
                     detectedRisk = interaction;
@@ -99,10 +150,15 @@ const App = () => {
             }
         }
         setRisk(detectedRisk);
-
     }, [userDrugs, interactions]);
 
-    // 3. 事件处理函数
+    // 3. 当用户用药列表变化时，重新生成用药计划
+    useEffect(() => {
+        const newPlan = generatePlan(userDrugs);
+        setPlan(newPlan);
+    }, [userDrugs]);
+
+    // 4. 事件处理函数
     const addDrug = (drug) => {
         if (!userDrugs.find(d => d.id === drug.id)) {
             setUserDrugs([...userDrugs, drug]);
@@ -147,14 +203,13 @@ const App = () => {
             {/* 风险提示 */}
             <div className={`risk-alert ${risk ? risk.risk_level : 'safe'}`}>
                 <h3>风险评估</h3>
-                {risk ? (
-                    <p>{risk.description}</p>
-                ) : (
-                    <p>✅ 当前用药方案未发现已知的相互作用风险。</p>
-                )}
+                {risk ? <p>{risk.description}</p> : <p>✅ 当前用药方案未发现已知的相互作用风险。</p>}
             </div>
 
-            {/* 新增的健康追踪模块 */}
+            {/* 用药计划模块 */}
+            <MedicationPlan plan={plan} />
+
+            {/* 健康追踪模块 */}
             <HealthTracker />
         </div>
     );

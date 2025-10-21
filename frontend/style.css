@@ -134,3 +134,43 @@ h1, h2 {
     resize: vertical;
     min-height: 60px;
 }
+
+/* 用药计划模块样式 */
+.medication-plan {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #e9ecef;
+}
+
+.medication-plan h2 {
+    border-bottom-color: #ced4da;
+}
+
+.plan-list {
+    list-style: none;
+    padding: 0;
+}
+
+.plan-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #fff;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+.plan-time {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #007bff;
+    margin-right: 20px;
+    min-width: 60px;
+}
+
+.plan-task {
+    font-size: 1em;
+}

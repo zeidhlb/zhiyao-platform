@@ -179,23 +179,34 @@ const App = () => {
     const [userDrugs, setUserDrugs] = useState([]);
     const [risk, setRisk] = useState(null);
     const [plan, setPlan] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     // 1. 加载数据
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const drugsRes = await fetch('http://localhost:3001/api/drugs');
-                const drugsData = await drugsRes.json();
+                setLoading(true);
+                // For GitHub Pages deployment, fetch from JSON files directly.
+                // This allows the site to work without a running backend.
+                const drugsResponse = await fetch('../data/drugs.json');
+                if (!drugsResponse.ok) throw new Error('Network response was not ok for drugs.json.');
+                const drugsData = await drugsResponse.json();
                 setAllDrugs(drugsData);
 
-                const interactionsRes = await fetch('http://localhost:3001/api/interactions');
-                const interactionsData = await interactionsRes.json();
+                const interactionsResponse = await fetch('../data/interactions.json');
+                if (!interactionsResponse.ok) throw new Error('Network response was not ok for interactions.json.');
+                const interactionsData = await interactionsResponse.json();
                 setInteractions(interactionsData);
+
             } catch (error) {
-                console.error("加载数据失败:", error);
-                alert("加载数据失败！请确保后端服务正在运行。");
+                console.error("Failed to fetch data:", error);
+                // Updated alert message for static deployment
+                alert('加载数据失败，请确保 data/drugs.json 和 data/interactions.json 文件存在且路径正确。');
+            } finally {
+                setLoading(false);
             }
         };
+
         fetchData();
     }, []);
 

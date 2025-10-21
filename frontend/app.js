@@ -106,6 +106,72 @@ const MedicationPlan = ({ plan }) => {
     );
 };
 
+// OCR 图片识别组件
+const OcrReader = ({ onOcrComplete }) => {
+    const [ocrImage, setOcrImage] = useState(null);
+    const [ocrStatus, setOcrStatus] = useState('待命');
+    const [ocrProgress, setOcrProgress] = useState(0);
+    const [ocrResult, setOcrResult] = useState('');
+
+    const handleImageChange = (event) => {
+        setOcrImage(event.target.files[0]);
+        setOcrResult('');
+        setOcrStatus('已选择图片');
+    };
+
+    const performOcr = async () => {
+        if (!ocrImage) {
+            alert('请先选择一张图片！');
+            return;
+        }
+        setOcrStatus('正在识别...');
+        setOcrProgress(0);
+
+        const { data: { text } } = await Tesseract.recognize(
+            ocrImage,
+            'chi_sim', // 使用简体中文语言包
+            {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        setOcrProgress(Math.round(m.progress * 100));
+                    }
+                }
+            }
+        );
+        
+        setOcrStatus('识别完成');
+        setOcrResult(text);
+        onOcrComplete(text); // 将识别结果传递给父组件
+    };
+
+    return (
+        <div className="ocr-reader panel">
+            <h2>OCR 处方/药盒识别</h2>
+            <p>上传处方或药盒的图片，系统将自动识别药品名称并添加到“我的用药”中。</p>
+            <div className="form-group">
+                <input type="file" accept="image/*" onChange={handleImageChange} />
+            </div>
+            <button onClick={performOcr} disabled={!ocrImage || ocrStatus.includes('正在')}>开始识别</button>
+            
+            {ocrStatus.includes('正在') && (
+                <div className="progress-bar">
+                    <div className="progress" style={{ width: `${ocrProgress}%` }}>
+                        {ocrProgress}%
+                    </div>
+                </div>
+            )}
+
+            {ocrResult && (
+                <div className="ocr-result">
+                    <h4>识别出的文本：</h4>
+                    <p>{ocrResult}</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 // 主应用组件
 const App = () => {
     const [allDrugs, setAllDrugs] = useState([]);
@@ -118,16 +184,16 @@ const App = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const drugsRes = await fetch('../data/drugs.json');
+                const drugsRes = await fetch('http://localhost:3001/api/drugs');
                 const drugsData = await drugsRes.json();
                 setAllDrugs(drugsData);
 
-                const interactionsRes = await fetch('../data/interactions.json');
+                const interactionsRes = await fetch('http://localhost:3001/api/interactions');
                 const interactionsData = await interactionsRes.json();
                 setInteractions(interactionsData);
             } catch (error) {
                 console.error("加载数据失败:", error);
-                alert("加载药品数据失败！请确保您是通过 Live Server 运行，而不是直接打开 HTML 文件。");
+                alert("加载数据失败！请确保后端服务正在运行。");
             }
         };
         fetchData();
@@ -169,9 +235,31 @@ const App = () => {
         setUserDrugs(userDrugs.filter(d => d.id !== drugId));
     };
 
+    // 5. 从 OCR 文本中查找并添加药品
+    const findAndAddDrugsFromText = (text) => {
+        let foundCount = 0;
+        allDrugs.forEach(drug => {
+            if (text.includes(drug.name)) {
+                if (!userDrugs.some(ud => ud.id === drug.id)) {
+                    addDrug(drug);
+                    foundCount++;
+                }
+            }
+        });
+        if (foundCount > 0) {
+            alert(`成功从图片中识别并添加了 ${foundCount} 种药品！`);
+        } else {
+            alert('未在识别的文本中找到药品库里对应的药品。');
+        }
+    };
+
     return (
         <div>
             <h1>知药 - 智能用药管理平台</h1>
+            
+            {/* OCR 组件 */}
+            <OcrReader onOcrComplete={findAndAddDrugsFromText} />
+
             <div className="container">
                 {/* 药品库 */}
                 <div className="panel">

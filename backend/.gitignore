@@ -1,0 +1,12 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+
+# Database
+*.db
+*.sqlite3
+
+# Environment Variables
+.env
